@@ -1009,8 +1009,10 @@ Object.assign(QuizGame.prototype, {
         this.cleanupQueue = this.cleanupQueue.filter(i => i.keep === true);
     },
 
-    handleNameConfirmation: function () { 
-        if (!this.dom.confirmNameBtn.disabled) this.showScreen('instructions'); 
+    handleNameConfirmation: function () {
+        if (this.dom.confirmNameBtn.disabled) return;
+        this.setupInitialGameState();
+        this.startGameFlow(0);
     },
     
     validateNameInput: function () {
