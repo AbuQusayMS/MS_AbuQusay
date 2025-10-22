@@ -1506,42 +1506,47 @@ Object.assign(QuizGame.prototype, {
         })();
     },
 
-    async loadQuestions(){
-      try{
-        const cacheKey='questions_cache';
-        const cacheTime='questions_cache_time';
-        const CACHE_DURATION=5*60*1000;
+    async loadQuestions() {
+        try {
+            const cacheKey = 'questions_cache';
+            const cacheTime = 'questions_cache_time';
+            const CACHE_DURATION = 5 * 60 * 1000;
 
-        const cachedTime=localStorage.getItem(cacheTime);
-        const now=Date.now();
-        if(cachedTime && (now-parseInt(cachedTime,10))<CACHE_DURATION){
-          const cachedData=localStorage.getItem(cacheKey);
-          if(cachedData){ this.questions=JSON.parse(cachedData); return true; }
+            const cachedTime = localStorage.getItem(cacheTime);
+            const now = Date.now();
+            
+            if (cachedTime && (now - parseInt(cachedTime)) < CACHE_DURATION) {
+                const cachedData = localStorage.getItem(cacheKey);
+                if (cachedData) {
+                    this.questions = JSON.parse(cachedData);
+                    return true;
+                }
+            }
+
+            const res = await fetch(this.config.QUESTIONS_URL, { 
+                cache: 'no-cache', 
+                headers: { 'Content-Type':'application/json' } 
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            
+            if (typeof data === 'object' && data !== null) { 
+                this.questions = data;
+  
+                try {
+                    localStorage.setItem(cacheKey, JSON.stringify(data));
+                    localStorage.setItem(cacheTime, now.toString());
+                } catch (e) {
+                    console.warn('Failed to cache questions:', e);
+                }
+                return true; 
+            }
+            throw new Error('Invalid questions data');
+        } catch (err) {
+            console.error('Failed to load questions:', err);
+            this.showToast('خطأ في تحميل الأسئلة', 'error');
+            return false;
         }
-
-        const res = await fetch(this.config.QUESTIONS_URL, {
-          cache:'no-cache',
-          mode:'cors',
-          credentials:'omit',
-          redirect:'follow'
-        });
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        if (data && typeof data==='object'){
-          this.questions=data;
-          try{
-            localStorage.setItem(cacheKey, JSON.stringify(data));
-            localStorage.setItem(cacheTime, now.toString());
-          }catch(_){}
-          return true;
-        }
-        throw new Error('Invalid questions data');
-      }catch(err){
-        console.error('Failed to load questions:', err);
-        this.showToast('خطأ في تحميل الأسئلة', 'error');
-        return false;
-      }
     },
 
     async displayLeaderboard() {
@@ -1618,48 +1623,41 @@ Object.assign(QuizGame.prototype, {
             this.dom.leaderboardContent.innerHTML = '<p>لوحة الصدارة فارغة حاليًا!</p>'; 
             return; 
         }
-
-        const list = document.createElement('ul');
+        
+        const list = document.createElement('ul'); 
         list.className = 'leaderboard-list';
-        const medals = ['🥇','🥈','🥉'];
+        const medals = ['🥇','🥈','🥉']; 
         let rank = 1;
-
-        // تحديد أول من أنهى المستوى المستحيل فقط
-        const firstImpossibleFinisher = players.find(pl => pl.is_impossible_finisher);
-
+        
         players.forEach(p => {
-            const li = document.createElement('li');
+            const li = document.createElement('li'); 
             li.className = 'leaderboard-item';
             let rankDisplay;
-
-            // 🎖️ يُمنح فقط لأول من أنهى المستوى المستحيل
-            if (p === firstImpossibleFinisher) {
-                li.classList.add('impossible-finisher');
-                rankDisplay = '🎖️';
-            } else {
-                if (rank <= 3) {
-                    li.classList.add(`rank-${rank}`);
-                    rankDisplay = medals[rank - 1];
+            
+            if (p.is_impossible_finisher) { 
+                li.classList.add('impossible-finisher'); 
+                rankDisplay = '🎖️'; 
+            } else { 
+                if (rank <= 3) { 
+                    li.classList.add(`rank-${rank}`); 
+                    rankDisplay = medals[rank-1]; 
                 } else {
-                    rankDisplay = rank;
+                    rankDisplay = rank; 
                 }
-                rank++;
+                rank++; 
             }
-
+            
             li.innerHTML = `
                 <span class="leaderboard-rank">${rankDisplay}</span>
                 <img src="${p.avatar || ''}" alt="صورة ${p.name || ''}" class="leaderboard-avatar" loading="lazy" style="visibility:${p.avatar ? 'visible':'hidden'}">
                 <div class="leaderboard-details">
                     <span class="leaderboard-name">${p.name || 'غير معروف'}</span>
                     <span class="leaderboard-score">${this.formatNumber(p.score)}</span>
-                </div>
-            `;
-
+                </div>`;
             li.addEventListener('click', () => this.showPlayerDetails(p));
             list.appendChild(li);
         });
-
-    // وضع القائمة داخل عنصر لوحة الصدارة
+        
         this.dom.leaderboardContent.innerHTML = '';
         this.dom.leaderboardContent.appendChild(list);
     },
@@ -1986,113 +1984,4 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleBtn = document.querySelector('.theme-toggle-btn');
     if (toggleBtn) toggleBtn.textContent = (savedTheme === 'dark') ? ICON_SUN : ICON_MOON;
     new QuizGame();
-
-    (function(){
-    const cards=[
-    {title:'النقاط',icon:'⚖️',html:`
-    <div class="help-card">
-    <h4><span class="icon">⚖️</span><span>النقاط</span></h4>
-    <p>كل إجابة صحيحة تمنحك <b>+100</b> نقطة.</p>
-    <p>الإجابة الخاطئة تخصم <b>100</b> نقطة من رصيدك.</p>
-    <p>حافظ على نقاطك مرتفعة قبل انتهاء فرص الأخطاء.</p>
-    </div>
-    `},
-    {title:'المساعدات',icon:'🛠️',html:`
-    <div class="help-card">
-    <h4><span class="icon">🛠️</span><span>المساعدات</span></h4>
-    <ul>
-    <li>التخطي <b>مجاني دائمًا</b>.</li>
-    <li><b>50:50</b> يحذف خيارين خاطئين.</li>
-    <li><b>تجميد الوقت</b> يوقف المؤقت 10 ثوانٍ.</li>
-    <li>تُعاد المساعدات مع بداية أول <b>ثلاثة مستويات</b> جديدة.</li>
-    </ul>
-    </div>
-    `},
-    {title:'المستويات',icon:'🎯',html:`
-    <div class="help-card">
-    <h4><span class="icon">🎯</span><span>المستويات</span></h4>
-    <p>تدرّج الصعوبة: <b>سهل</b> ثم <b>متوسط</b> ثم <b>صعب</b> ثم <b>مستحيل</b>.</p>
-    <p>أكمل كل مستوى للوصول إلى النهائي.</p>
-    </div>
-    `},
-    {title:'مساعدة التخطي',icon:'⏭️',html:`
-    <div class="help-card">
-    <h4><span class="icon">⏭️</span><span>مساعدة التخطي</span></h4>
-    <p>يمكنك استخدام ميزة <b>التخطي</b> بحرية تامة خلال أول <b>ثلاث مستويات</b>.</p>
-    <p>لا توجد حدود لعدد مرات استخدامها في تلك المراحل.</p>
-    <p>استفد منها لتجاوز الأسئلة الصعبة بسرعة.</p>
-    </div>
-    `},
-    {title:'المستوى المستحيل',icon:'🚫',html:`
-    <div class="help-card">
-    <h4><span class="icon">🚫</span><span>المستوى المستحيل</span></h4>
-    <p>في هذا المستوى لا تتوفر أي نوع من المساعدات.</p>
-    <p>الاعتماد الكامل على مهارتك وسرعة تفكيرك.</p>
-    <p>أكمله لتحصل على لقب البطل الحقيقي.</p>
-    </div>
-    `},
-    {title:'مشاركة النتائج',icon:'📢',html:`
-    <div class="help-card">
-    <h4><span class="icon">📢</span><span>مشاركة النتائج</span></h4>
-    <p>يمكنك مشاركة نتيجتك مباشرة عبر <b>منصة إكس</b>.</p>
-    <p>اضغط على أيقونة إكس في شاشة النتائج.</p>
-    <p>سيُجهّز لك منشور تلقائي جاهز للنشر.</p>
-    </div>
-    `},
-    {title:'لوحة الصدارة',icon:'🏆',html:`
-    <div class="help-card">
-    <h4><span class="icon">🏆</span><span>لوحة الصدارة</span></h4>
-    <p>يمكنك الاطّلاع على نتائجك ونتائج اللاعبين الآخرين.</p>
-    <p>اضغط على أي اسم في القائمة لتفاصيل أدائه.</p>
-    <p>تعرف على ترتيبك وتقدمك في المنافسة.</p>
-    </div>
-    `},
-    {title:'تصفية النتائج',icon:'🎚️',html:`
-    <div class="help-card">
-    <h4><span class="icon">🎚️</span><span>تصفية النتائج</span></h4>
-    <p>استخدم فلتر النتائج في لوحة الصدارة.</p>
-    <p>يمكنك عرض النتائج حسب <b>الأفضل</b> أو <b>الأعلى دقة</b> أو <b>الأسرع</b>.</p>
-    <p>كما يمكنك تصفيتها حسب عدد المحاولات.</p>
-    </div>
-    `},
-    {title:'الدعم',icon:'📩',html:`
-    <div class="help-card">
-    <h4><span class="icon">📩</span><span>الدعم</span></h4>
-    <p>للاقتراحات أو الإبلاغ عن مشكلة:</p>
-    <ul>
-    <li><a href="https://x.com/_MS_AbuQusay?t=hs_J87d1xR6dPnIVtNstPg&s=09" target="_blank" rel="noopener noreferrer">إكس</a></li>
-    <li><a href="https://www.instagram.com/_ms_abuqusay?igsh=OTRmODR1cTNkcXV1" target="_blank" rel="noopener noreferrer">إنستغرام</a></li>
-    </ul>
-    </div>
-    `}
-    ];
-    const $=(s,r=document)=>r.querySelector(s);
-    const fab=$('#helpFab');
-    const drawer=$('#helpDrawer');
-    const body=$('#helpBody');
-    const backdrop=$('#helpBackdrop');
-    const progress=$('#helpProgress');
-    const btnPrev=$('[data-help="prev"]',drawer);
-    const btnNext=$('[data-help="next"]',drawer);
-    const btnClose=$('[data-help="close"]',drawer);
-    if(!fab||!drawer||!body||!progress){return;}
-    let i=Math.min(Math.max(parseInt(localStorage.getItem('help.index')||'0',10),0),cards.length-1);
-    function render(){
-    body.innerHTML=cards[i].html;
-    progress.textContent=(i+1)+'/'+cards.length;
-    btnPrev.disabled=(i===0);
-    btnNext.disabled=(i===cards.length-1);
-    localStorage.setItem('help.index',String(i));
-    }
-    function open(){drawer.classList.add('open');drawer.setAttribute('aria-hidden','false');backdrop.hidden=false;fab.setAttribute('aria-expanded','true');setTimeout(()=>drawer.focus(),0)}
-    function close(){drawer.classList.remove('open');drawer.setAttribute('aria-hidden','true');backdrop.hidden=true;fab.setAttribute('aria-expanded','false');fab.focus()}
-    fab.addEventListener?.('click',open);
-    fab.addEventListener?.('keydown',(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}});
-    btnClose?.addEventListener('click',close);
-    backdrop?.addEventListener('click',close);
-    document.addEventListener('keydown',(e)=>{if(e.key==='Escape')close()});
-    btnPrev?.addEventListener('click',()=>{if(i>0){i--;render()}});
-    btnNext?.addEventListener('click',()=>{if(i<cards.length-1){i++;render()}});
-    render();
-    })();
 });
