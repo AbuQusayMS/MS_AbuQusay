@@ -1506,47 +1506,42 @@ Object.assign(QuizGame.prototype, {
         })();
     },
 
-    async loadQuestions() {
-        try {
-            const cacheKey = 'questions_cache';
-            const cacheTime = 'questions_cache_time';
-            const CACHE_DURATION = 5 * 60 * 1000;
+    async loadQuestions(){
+      try{
+        const cacheKey='questions_cache';
+        const cacheTime='questions_cache_time';
+        const CACHE_DURATION=5*60*1000;
 
-            const cachedTime = localStorage.getItem(cacheTime);
-            const now = Date.now();
-            
-            if (cachedTime && (now - parseInt(cachedTime)) < CACHE_DURATION) {
-                const cachedData = localStorage.getItem(cacheKey);
-                if (cachedData) {
-                    this.questions = JSON.parse(cachedData);
-                    return true;
-                }
-            }
-
-            const res = await fetch(this.config.QUESTIONS_URL, { 
-                cache: 'no-cache', 
-                headers: { 'Content-Type':'application/json' } 
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            
-            if (typeof data === 'object' && data !== null) { 
-                this.questions = data;
-  
-                try {
-                    localStorage.setItem(cacheKey, JSON.stringify(data));
-                    localStorage.setItem(cacheTime, now.toString());
-                } catch (e) {
-                    console.warn('Failed to cache questions:', e);
-                }
-                return true; 
-            }
-            throw new Error('Invalid questions data');
-        } catch (err) {
-            console.error('Failed to load questions:', err);
-            this.showToast('خطأ في تحميل الأسئلة', 'error');
-            return false;
+        const cachedTime=localStorage.getItem(cacheTime);
+        const now=Date.now();
+        if(cachedTime && (now-parseInt(cachedTime,10))<CACHE_DURATION){
+          const cachedData=localStorage.getItem(cacheKey);
+          if(cachedData){ this.questions=JSON.parse(cachedData); return true; }
         }
+
+        const res = await fetch(this.config.QUESTIONS_URL, {
+          cache:'no-cache',
+          mode:'cors',
+          credentials:'omit',
+          redirect:'follow'
+        });
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        if (data && typeof data==='object'){
+          this.questions=data;
+          try{
+            localStorage.setItem(cacheKey, JSON.stringify(data));
+            localStorage.setItem(cacheTime, now.toString());
+          }catch(_){}
+          return true;
+        }
+        throw new Error('Invalid questions data');
+      }catch(err){
+        console.error('Failed to load questions:', err);
+        this.showToast('خطأ في تحميل الأسئلة', 'error');
+        return false;
+      }
     },
 
     async displayLeaderboard() {
