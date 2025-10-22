@@ -1626,40 +1626,44 @@ Object.assign(QuizGame.prototype, {
             return; 
         }
         
-        const list = document.createElement('ul'); 
+        const list = document.createElement('ul');
         list.className = 'leaderboard-list';
-        const medals = ['🥇','🥈','🥉']; 
+        const medals = ['🥇','🥈','🥉'];
         let rank = 1;
-        
+
+        const firstImpossibleFinisher = players.find(pl => pl.is_impossible_finisher);
+
         players.forEach(p => {
-            const li = document.createElement('li'); 
+            const li = document.createElement('li');
             li.className = 'leaderboard-item';
             let rankDisplay;
-            
-            if (p.is_impossible_finisher) { 
-                li.classList.add('impossible-finisher'); 
-                rankDisplay = '🎖️'; 
-            } else { 
-                if (rank <= 3) { 
-                    li.classList.add(`rank-${rank}`); 
-                    rankDisplay = medals[rank-1]; 
+
+            if (p === firstImpossibleFinisher) {
+                li.classList.add('impossible-finisher');
+                rankDisplay = '🎖️';
+            } else {
+                if (rank <= 3) {
+                    li.classList.add(`rank-${rank}`);
+                    rankDisplay = medals[rank - 1];
                 } else {
-                    rankDisplay = rank; 
+                    rankDisplay = rank;
                 }
-                rank++; 
+                rank++;
             }
-            
+
             li.innerHTML = `
                 <span class="leaderboard-rank">${rankDisplay}</span>
                 <img src="${p.avatar || ''}" alt="صورة ${p.name || ''}" class="leaderboard-avatar" loading="lazy" style="visibility:${p.avatar ? 'visible':'hidden'}">
                 <div class="leaderboard-details">
                     <span class="leaderboard-name">${p.name || 'غير معروف'}</span>
                     <span class="leaderboard-score">${this.formatNumber(p.score)}</span>
-                </div>`;
+                </div>
+            `;
+
             li.addEventListener('click', () => this.showPlayerDetails(p));
             list.appendChild(li);
         });
-        
+
         this.dom.leaderboardContent.innerHTML = '';
         this.dom.leaderboardContent.appendChild(list);
     },
