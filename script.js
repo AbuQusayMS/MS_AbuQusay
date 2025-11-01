@@ -1,3 +1,5 @@
+// المرحلة 1
+
 const ICON_SUN  = '\u2600\uFE0F';
 const ICON_MOON = '\uD83C\uDF19';
 
@@ -459,6 +461,9 @@ class QuizGame {
         });
     }
 }
+
+
+// المرحلة 2
 
 Object.assign(QuizGame.prototype, {
 
@@ -1259,6 +1264,8 @@ Object.assign(QuizGame.prototype, {
         return { score, label, details: { accScore, speedScore, levelBonus, cpmBonus, historyBonus, penalty } };
     }
 });
+
+// المرحلة 3
 
 Object.assign(QuizGame.prototype, {
 
